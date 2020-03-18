@@ -691,6 +691,20 @@ FINT int3c2e_sph(double *out, FINT *dims, FINT *shls, FINT *atm, FINT natm,
         envs.f_gout = &CINTgout2e;
         return CINT3c2e_spheric_drv(out, dims, &envs, opt, cache, &c2s_sph_3c2e1, 0);
 }
+
+FINT int3c2e_lhpot_sph(double *out, FINT *dims, FINT *shls, FINT *atm, FINT natm,
+                FINT *bas, FINT nbas, double *env, CINTOpt *opt, double *cache)
+{
+        FINT ng[] = {0, 0, 0, 0, 0, 1, 1, 1};
+        CINTEnvVars envs;
+        double ri[3];
+        double rj[3];
+        double rk[3];
+        CINTinit_int3c2e_lhpot_EnvVars(&envs, ng, shls, atm, natm, bas, nbas, env, ri, rj, rk);
+        envs.f_gout = &CINTgout2e;
+        return CINT3c2e_spheric_drv(out, dims, &envs, opt, cache, &c2s_sph_3c2e1, 0);
+}
+
 void int3c2e_optimizer(CINTOpt **opt, FINT *atm, FINT natm,
                        FINT *bas, FINT nbas, double *env)
 {
