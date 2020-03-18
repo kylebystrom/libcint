@@ -153,7 +153,8 @@ void CINTinit_int3c2e_lhpot_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
         envs->rj = env + atm(PTR_COORD, bas(ATOM_OF, j_sh));
         envs->rk = env + atm(PTR_COORD, bas(ATOM_OF, k_sh));
 
-        for (int n = 0; n < 3; n++) {
+        int n;
+        for (n = 0; n < 3; n++) {
             ri[n] = envs->ri[n] - envs->rk[n];
             rj[n] = envs->rk[n] - envs->rj[n];
             rk[n] = 0;
