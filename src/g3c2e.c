@@ -272,7 +272,8 @@ void CINTinit_int3c2e_xed_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
         double lambda = env[PTR_XHOLE_LAMBDA];
         //printf("%lf\n", lambda);
 
-        for (int n = 0; n < 3; n++) {
+        int n;
+        for (n = 0; n < 3; n++) {
             ri[n] = (envs->ri[n] - envs->rk[n]) / lambda;
             rj[n] = (envs->rk[n] - envs->rj[n]) / (1 - lambda);
             rk[n] = 0;
