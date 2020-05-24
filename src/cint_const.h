@@ -16,6 +16,8 @@
 #define PTR_F12_ZETA            9
 // Gaussian type geminal e^{-zeta r^2}
 #define PTR_GTG_ZETA            10
+// lambda parameters for exchange hole transformation
+#define PTR_XHOLE_LAMBDA        11
 #define PTR_ENV_START           20
 
 // slots of atm
