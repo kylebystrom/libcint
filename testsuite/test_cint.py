@@ -17,11 +17,12 @@ import numpy
 _cint = numpy.ctypeslib.load_library('libcint', '.')
 
 
-PTR_LIGHT_SPEED    = 0
 PTR_COMMON_ORIG    = 1
 PTR_SHIELDING_ORIG = 4
 PTR_RINV_ORIG      = 4
 PTR_RINV_ZETA      = 7
+PTR_RANGE_OMEGA    = 8
+PTR_EXPCUTOFF      = 11
 PTR_ENV_START      = 20
 
 CHARGE_OF  = 0
@@ -157,7 +158,7 @@ def test_int1e_sph(name, vref, dim, place):
             di = (bas[i,ANG_OF] * 2 + 1) * bas[i,NCTR_OF]
             dj = (bas[j,ANG_OF] * 2 + 1) * bas[j,NCTR_OF]
             shls = (ctypes.c_int * 2)(i, j)
-            intor(op, shls, c_atm, natm, c_bas, nbas, c_env);
+            intor(op, shls, c_atm, natm, c_bas, nbas, c_env)
             v1 += abs(numpy.array(op[:di*dj*dim])).sum()
             cnt += di*dj*dim
     if close(v1, vref, cnt, place):
@@ -179,7 +180,7 @@ def test_int1e_spinor(name, vref, dim, place):
             di = _cint.CINTlen_spinor(i, c_bas, nbas) * bas[i,NCTR_OF]
             dj = _cint.CINTlen_spinor(j, c_bas, nbas) * bas[j,NCTR_OF]
             shls = (ctypes.c_int * 2)(i, j)
-            intor(op, shls, c_atm, natm, c_bas, nbas, c_env);
+            intor(op, shls, c_atm, natm, c_bas, nbas, c_env)
             v1 += abs(cdouble_to_cmplx(op[:di*dj*dim*2])).sum()
             cnt += di*dj*dim*2
     if close(v1, vref, cnt, place):
@@ -216,9 +217,9 @@ def test_comp1e_spinor(name1, name_ref, shift, dim, place):
             di = _cint.CINTlen_spinor(i, c_bas, nbas) * bas[i,NCTR_OF]
             dj = _cint.CINTlen_spinor(j, c_bas, nbas) * bas[j,NCTR_OF]
             shls = (ctypes.c_int * 2)(i+shift[0], j+shift[1])
-            intor(op, shls, c_atm, natm, c_bas, nbas, c_env);
+            intor(op, shls, c_atm, natm, c_bas, nbas, c_env)
             shls_ref = (ctypes.c_int * 2)(i, j)
-            intor_ref(op_ref, shls_ref, c_atm, natm, c_bas, nbas, c_env);
+            intor_ref(op_ref, shls_ref, c_atm, natm, c_bas, nbas, c_env)
             dd = abs(pfac * cdouble_to_cmplx(op[:di*dj*dim*2]).reshape(di,dj,dim)
                      - cdouble_to_cmplx(op_ref[:di*dj*dim*2]).reshape(di,dj,dim))
             if numpy.round(dd, place).sum():
@@ -245,13 +246,59 @@ def test_int2e_sph(name, vref, dim, place):
                     dk = (bas[k,ANG_OF] * 2 + 1) * bas[k,NCTR_OF]
                     dl = (bas[l,ANG_OF] * 2 + 1) * bas[l,NCTR_OF]
                     shls = (ctypes.c_int * 4)(i, j, k, l)
-                    intor(op, shls, c_atm, natm, c_bas, nbas, c_env, opt);
+                    intor(op, shls, c_atm, natm, c_bas, nbas, c_env, opt)
                     v1 += abs(numpy.array(op[:di*dj*dk*dl*dim])).sum()
                     cnt += di*dj*dk*dl*dim
     if close(v1, vref, cnt, place):
         print("pass: ", name)
     else:
         print("* FAIL: ", name, ". err:", '%.16g' % abs(v1-vref), "/", vref)
+
+def test_erf(name, omega, place):
+    intor = getattr(_cint, name)
+    intor.restype = ctypes.c_void_p
+    env_lr = env.copy()
+    env_lr[PTR_RANGE_OMEGA] = omega
+    env_sr = env.copy()
+    env_sr[PTR_RANGE_OMEGA] = -omega
+    c_env_lr = env_lr.ctypes.data_as(ctypes.c_void_p)
+    c_env_sr = env_sr.ctypes.data_as(ctypes.c_void_p)
+
+    op_lr = numpy.empty(10000)
+    op_sr = numpy.empty(10000)
+    op = numpy.empty(10000)
+    v1 = 0
+    cnt = 0
+    shls = (ctypes.c_int * 4)(3,3,3,3)
+    intor(op.ctypes.data_as(ctypes.c_void_p), shls, c_atm, natm, c_bas, nbas, c_env, opt)
+    intor(op_lr.ctypes.data_as(ctypes.c_void_p), shls, c_atm, natm, c_bas, nbas, c_env_lr, opt)
+    intor(op_sr.ctypes.data_as(ctypes.c_void_p), shls, c_atm, natm, c_bas, nbas, c_env_sr, opt)
+
+    for l in range(nbas.value):
+        for k in range(l+1):
+            for j in range(l+1):
+                for i in range(j+1):
+                    di = (bas[i,ANG_OF] * 2 + 1) * bas[i,NCTR_OF]
+                    dj = (bas[j,ANG_OF] * 2 + 1) * bas[j,NCTR_OF]
+                    dk = (bas[k,ANG_OF] * 2 + 1) * bas[k,NCTR_OF]
+                    dl = (bas[l,ANG_OF] * 2 + 1) * bas[l,NCTR_OF]
+                    shls = (ctypes.c_int * 4)(i, j, k, l)
+                    intor(op.ctypes.data_as(ctypes.c_void_p), shls, c_atm, natm, c_bas, nbas, c_env, opt)
+                    intor(op_lr.ctypes.data_as(ctypes.c_void_p), shls, c_atm, natm, c_bas, nbas, c_env_lr, opt)
+                    intor(op_sr.ctypes.data_as(ctypes.c_void_p), shls, c_atm, natm, c_bas, nbas, c_env_sr, opt)
+                    cnt = di * dj * dk * dl
+                    dd = abs(op_lr[:cnt] + op_sr[:cnt] - op[:cnt])
+
+                    with numpy.errstate(invalid='ignore'):
+                        dd[dd > 1e-6] / op[:cnt][dd > 1e-6]
+                    if numpy.round(dd.max(), place) > 0:
+                        maxi = dd.argmax()
+                        print("* FAIL: erf+erfc", name, "omega=", omega,
+                              " shell:", i, j, k, l,
+                              "erf:", op_lr[maxi], "erfc:", op_sr[maxi],
+                              "regular:", op[maxi], "err:", dd[maxi])
+                        return
+    print("pass: erf+erfc", name, "omega=", omega)
 
 def test_int2e_spinor(name, vref, dim, place):
     intor = getattr(_cint, name)
@@ -268,7 +315,7 @@ def test_int2e_spinor(name, vref, dim, place):
                     dk = _cint.CINTlen_spinor(k, c_bas, nbas) * bas[k,NCTR_OF]
                     dl = _cint.CINTlen_spinor(l, c_bas, nbas) * bas[l,NCTR_OF]
                     shls = (ctypes.c_int * 4)(i, j, k, l)
-                    intor(op, shls, c_atm, natm, c_bas, nbas, c_env, opt);
+                    intor(op, shls, c_atm, natm, c_bas, nbas, c_env, opt)
                     v1 += abs(cdouble_to_cmplx(op[:di*dj*dk*dl*dim*2])).sum()
                     cnt += di*dj*dk*dl*dim*2
     if close(v1, vref, cnt, place):
@@ -382,6 +429,11 @@ if __name__ == "__main__":
               ('cint2e_ip1_sph', 115489.8643866550 , 3, 8 ),
              ):
         test_int2e_sph(*f)
+
+    test_erf('cint2e_sph', 0.2, 9)
+    test_erf('cint2e_sph', 0.5, 9)
+    test_erf('cint2e_sph', 0.8, 9)
+
     if "--quick" not in sys.argv:
         # Four tests marked with "# *" may fail in quadmath mode
         for f in (('cint2e_ip1_sph', 115489.8643866550 , 3, 8 ),

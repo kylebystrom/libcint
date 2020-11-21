@@ -51,6 +51,12 @@ FINT CINTinit_int4c1e_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
         envs->rl = env + atm(PTR_COORD, bas(ATOM_OF, l_sh));
 
         envs->common_factor = 1;
+        if (env[PTR_EXPCUTOFF] == 0) {
+                envs->expcutoff = EXPCUTOFF;
+        } else {
+                envs->expcutoff = MAX(MIN_EXPCUTOFF, env[PTR_EXPCUTOFF]);
+        }
+
         envs->gbits = ng[GSHIFT];
         envs->ncomp_e1 = ng[POS_E1];
         envs->ncomp_e2 = ng[POS_E2];

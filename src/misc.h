@@ -4,6 +4,7 @@
  * basic functions
  */
 
+#include <stdint.h>
 #include "config.h"
 #include "fblas.h"
 
@@ -22,10 +23,11 @@ double CINTsquare_dist(const double *r1, const double *r2);
 
 double CINTgto_norm(FINT n, double a);
 
-#define MALLOC_INSTACK(var, dtype, n) \
-        var = (dtype *)(cache); \
-        cache = (double *)(var + n);
+#define MALLOC_INSTACK(var, n) \
+        var = (void *)cache; \
+        cache = (void *)(((uintptr_t)(var + (n)) + 7) & (-(uintptr_t)8));
 
+#ifdef WITH_CINT2_INTERFACE
 #define ALL_CINT(NAME) \
 FINT c##NAME##_cart(double *out, FINT *shls, FINT *atm, FINT natm, \
             FINT *bas, FINT nbas, double *env, CINTOpt *opt) { \
@@ -68,3 +70,10 @@ FINT c##NAME(double *out, FINT *shls, FINT *atm, FINT natm, \
         return NAME##_spinor((double complex *)out, NULL, shls, \
                              atm, natm, bas, nbas, env, NULL, NULL); \
 }
+
+#else
+
+#define ALL_CINT(NAME)
+#define ALL_CINT1E(NAME)
+
+#endif  // WITH_CINT2_INTERFACE

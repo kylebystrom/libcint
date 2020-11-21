@@ -1,3 +1,28 @@
+Version 4.0.6  (2020-11-13):
+	* Fix return value bug in rysroots
+Version 4.0.5  (2020-10-30):
+	* Fix prescreening bug in int3c2e
+Version 4.0.4  (2020-10-29):
+	* Fix cache size bug in int3c1e
+Version 4.0.3  (2020-10-27):
+	* Fix memory allocation in int3c1e
+	* Improve macro MALLOC_INSTACK
+Version 4.0.2  (2020-10-03):
+	* Fix typedef Function in cint_funcs.h
+Version 4.0.1  (2020-10-02):
+	* Update docs
+Version 4.0.0  (2020-09-23):
+	* API Change. PTR_LIGHT_SPEED is replaced with PTR_EXPCUTOFF.
+	  Integral screening parameter can be passed through env[PTR_EXPCUTOFF]
+	* Add short-range integrals for range-separation
+	* Handle linear dependency in Rys polynomial
+	* Avoid calling exit function (issue #41)
+Version 3.1.1  (2020-08-25):
+	* Fix bug in (py, pz, px) order
+Version 3.1.0  (2020-08-25):
+	* Add convention py, pz, px
+Version 3.0.20  (2020-05-13):
+	* Fix integral ggkin
 Version 3.0.19  (2019-11-30):
 	* support fractional nuclear charges
 Version 3.0.18  (2019-07-02):

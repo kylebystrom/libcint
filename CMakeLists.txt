@@ -1,7 +1,11 @@
 cmake_minimum_required (VERSION 2.6)
 project (cint C)
-set(cint_SOVERSION "3")
-set(cint_VERSION "3.0.19")
+set(cint_VERSION_MAJOR "4")
+set(cint_VERSION_MINOR "0")
+set(cint_VERSION_PATCH "6")
+set(cint_VERSION_TWEAK "0")
+set(cint_VERSION "${cint_VERSION_MAJOR}.${cint_VERSION_MINOR}.${cint_VERSION_PATCH}")
+set(cint_SOVERSION "${cint_VERSION_MAJOR}")
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2 -DNDEBUG")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
@@ -67,6 +71,7 @@ if(WITH_RANGE_COULOMB)
 # defined in config.h
 #  add_definitions(-DWITH_RANGE_COULOMB)
   message("Enabled WITH_RANGE_COULOMB")
+  set(cintSrc ${cintSrc} src/erfc_roots.c src/polyfits.c)
 endif(WITH_RANGE_COULOMB)
 
 if(WITH_COULOMB_ERF)
@@ -87,6 +92,39 @@ if(WITH_GTG)
   add_definitions(-DWITH_GTG)
   message("Enabled WITH_GTG")
 endif(WITH_GTG)
+
+if(PYPZPX)
+  add_definitions(-DPYPZPX)
+  message("P orbitals convention (py, pz, px)")
+else()
+  message("P orbitals convention (px, py, pz)")
+endif(PYPZPX)
+
+if(MIN_EXPCUTOFF)
+  message("Minimal cutoff in exponent for integral screening ${MIN_EXPCUTOFF}")
+  add_definitions(-DMIN_EXPCUTOFF=${MIN_EXPCUTOFF})
+endif()
+
+if(KEEP_GOING)
+  message("Whether to trigger hard exit for numerical issues in Rys quadrature")
+  add_definitions(-DKEEP_GOING)
+endif()
+
+option(WITH_FORTRAN "Fortran interface" on)
+if(WITH_FORTRAN)
+  add_definitions(-DWITH_FORTRAN)
+  message("Enable Fortran interface")
+else()
+  message("Exclude Fortran interface")
+endif(WITH_FORTRAN)
+
+option(WITH_CINT2_INTERFACE "Old libcint (version 2) interface" on)
+if(WITH_CINT2_INTERFACE)
+  add_definitions(-DWITH_CINT2_INTERFACE)
+  message("Enable old cint (version 2) interface")
+else()
+  message("Exclude old cint (version 2) interface")
+endif(WITH_CINT2_INTERFACE)
 
 option(BUILD_SHARED_LIBS "build shared libraries" 1)
 option(ENABLE_EXAMPLE "build examples" 0)
@@ -111,11 +149,14 @@ if(QUADMATH_FOUND)
 endif()
 target_link_libraries(cint "-lm")
 
-install(TARGETS cint DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+
 set(CintHeaders
   ${PROJECT_SOURCE_DIR}/include/cint_funcs.h
   ${PROJECT_BINARY_DIR}/include/cint.h)
-install(FILES ${CintHeaders} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+
+install(TARGETS cint DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" COMPONENT "lib")
+install(FILES ${CintHeaders} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} COMPONENT "dev")
+
 
 if(ENABLE_EXAMPLE)
   enable_language(Fortran)
@@ -139,3 +180,40 @@ if(BUILD_SHARED_LIBS AND ENABLE_TEST)
       COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/testsuite/test_3c2e.py ${RUN_QUICK_TEST})
   endif()
 endif()
+
+include(CPackComponent)
+
+set(CPACK_PACKAGE_CHECKSUM "SHA512")
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_COMPRESSION_TYPE "xz")
+set(CPACK_PACKAGE_VENDOR "Qiming @sunqm Sun")
+set(CPACK_PACKAGE_CONTACT "https://github.com/sunqm/libcint")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/sunqm/libcint")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/doc/libcint.CPack.txt")
+
+set(CPACK_PACKAGE_VERSION_MAJOR "${cint_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${cint_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${cint_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION_TWEAK "${cint_VERSION_TWEAK}")
+
+set(CPACK_COMPONENTS_GROUPING "IGNORE")
+
+set(CPACK_MONOLITHIC_INSTALL OFF)
+set(CPACK_DEB_COMPONENT_INSTALL ON)
+set(CPACK_RPM_COMPONENT_INSTALL ON)
+set(CPACK_NSIS_COMPONENT_INSTALL ON)
+
+set("CPACK_DEBIAN_LIB_PACKAGE_NAME" "libcint")
+set("CPACK_DEBIAN_DEV_PACKAGE_NAME" "${CPACK_DEBIAN_LIB_PACKAGE_NAME}-dev")
+
+set(CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "libopenblas0-pthread")
+set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS "${CPACK_DEBIAN_LIB_PACKAGE_NAME},libopenblas-pthread-dev")
+if(HAVE_QUADMATH)
+  set(CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "${CPACK_DEBIAN_LIB_PACKAGE_DEPENDS},libquadmath0")
+endif()
+
+set(CPACK_COMPONENTS_GROUPING "IGNORE")
+
+include(CPack)

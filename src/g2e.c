@@ -10,6 +10,7 @@
 #include "cint_const.h"
 #include "cint_bas.h"
 #include "rys_roots.h"
+#include "misc.h"
 #include "g2e.h"
 
 #define DEF_GXYZ(type, G, GX, GY, GZ) \
@@ -53,6 +54,11 @@ void CINTinit_int2e_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
         envs->common_factor = (M_PI*M_PI*M_PI)*2/SQRTPI
                 * CINTcommon_fac_sp(envs->i_l) * CINTcommon_fac_sp(envs->j_l)
                 * CINTcommon_fac_sp(envs->k_l) * CINTcommon_fac_sp(envs->l_l);
+        if (env[PTR_EXPCUTOFF] == 0) {
+                envs->expcutoff = EXPCUTOFF;
+        } else {
+                envs->expcutoff = MAX(MIN_EXPCUTOFF, env[PTR_EXPCUTOFF]);
+        }
 
         envs->gbits = ng[GSHIFT];
         envs->ncomp_e1 = ng[POS_E1];
@@ -400,8 +406,12 @@ void CINTg0_lj2d_4d(double *g, const CINTEnvVars *envs)
         const double *rkrl = envs->rkrl;
         DEF_GXYZ(double, g, gx, gy, gz);
         const double *p1x, *p1y, *p1z, *p2x, *p2y, *p2z;
+        double rx, ry, rz;
 
         // g(i,...,j) = rirj * g(i-1,...,j) +  g(i-1,...,j+1)
+        rx = rirj[0];
+        ry = rirj[1];
+        rz = rirj[2];
         p1x = gx - di;
         p1y = gy - di;
         p1z = gz - di;
@@ -413,13 +423,16 @@ void CINTg0_lj2d_4d(double *g, const CINTEnvVars *envs)
         for (l = 0; l <= mmax; l++) {
                 ptr = j*dj + l*dl + i*di;
                 for (n = ptr; n < ptr+nroots; n++) {
-                        gx[n] = rirj[0] * p1x[n] + p2x[n];
-                        gy[n] = rirj[1] * p1y[n] + p2y[n];
-                        gz[n] = rirj[2] * p1z[n] + p2z[n];
+                        gx[n] = rx * p1x[n] + p2x[n];
+                        gy[n] = ry * p1y[n] + p2y[n];
+                        gz[n] = rz * p1z[n] + p2z[n];
                 }
         } } }
 
         // g(...,k,l,..) = rkrl * g(...,k-1,l,..) + g(...,k-1,l+1,..)
+        rx = rkrl[0];
+        ry = rkrl[1];
+        rz = rkrl[2];
         p1x = gx - dk;
         p1y = gy - dk;
         p1z = gz - dk;
@@ -431,9 +444,9 @@ void CINTg0_lj2d_4d(double *g, const CINTEnvVars *envs)
                 for (l = 0; l <= mmax-k; l++) {
                         ptr = j*dj + l*dl + k*dk;
                         for (n = ptr; n < ptr+dk; n++) {
-                                gx[n] = rkrl[0] * p1x[n] + p2x[n];
-                                gy[n] = rkrl[1] * p1y[n] + p2y[n];
-                                gz[n] = rkrl[2] * p1z[n] + p2z[n];
+                                gx[n] = rx * p1x[n] + p2x[n];
+                                gy[n] = ry * p1y[n] + p2y[n];
+                                gz[n] = rz * p1z[n] + p2z[n];
                         }
                 }
         } }
@@ -457,8 +470,12 @@ void CINTg0_kj2d_4d(double *g, const CINTEnvVars *envs)
         const double *rkrl = envs->rkrl;
         DEF_GXYZ(double, g, gx, gy, gz);
         const double *p1x, *p1y, *p1z, *p2x, *p2y, *p2z;
+        double rx, ry, rz;
 
         // g(i,...,j) = rirj * g(i-1,...,j) +  g(i-1,...,j+1)
+        rx = rirj[0];
+        ry = rirj[1];
+        rz = rirj[2];
         p1x = gx - di;
         p1y = gy - di;
         p1z = gz - di;
@@ -470,13 +487,16 @@ void CINTg0_kj2d_4d(double *g, const CINTEnvVars *envs)
         for (k = 0; k <= mmax; k++) {
                 ptr = j*dj + k*dk + i*di;
                 for (n = ptr; n < ptr+nroots; n++) {
-                        gx[n] = rirj[0] * p1x[n] + p2x[n];
-                        gy[n] = rirj[1] * p1y[n] + p2y[n];
-                        gz[n] = rirj[2] * p1z[n] + p2z[n];
+                        gx[n] = rx * p1x[n] + p2x[n];
+                        gy[n] = ry * p1y[n] + p2y[n];
+                        gz[n] = rz * p1z[n] + p2z[n];
                 }
         } } }
 
         // g(...,k,l,..) = rkrl * g(...,k,l-1,..) + g(...,k+1,l-1,..)
+        rx = rkrl[0];
+        ry = rkrl[1];
+        rz = rkrl[2];
         p1x = gx - dl;
         p1y = gy - dl;
         p1z = gz - dl;
@@ -488,9 +508,9 @@ void CINTg0_kj2d_4d(double *g, const CINTEnvVars *envs)
         for (k = 0; k <= mmax-l; k++) {
                 ptr = j*dj + l*dl + k*dk;
                 for (n = ptr; n < ptr+dk; n++) {
-                        gx[n] = rkrl[0] * p1x[n] + p2x[n];
-                        gy[n] = rkrl[1] * p1y[n] + p2y[n];
-                        gz[n] = rkrl[2] * p1z[n] + p2z[n];
+                        gx[n] = rx * p1x[n] + p2x[n];
+                        gy[n] = ry * p1y[n] + p2y[n];
+                        gz[n] = rz * p1z[n] + p2z[n];
                 }
                 }
         } }
@@ -514,8 +534,12 @@ void CINTg0_il2d_4d(double *g, const CINTEnvVars *envs)
         const double *rkrl = envs->rkrl;
         DEF_GXYZ(double, g, gx, gy, gz);
         const double *p1x, *p1y, *p1z, *p2x, *p2y, *p2z;
+        double rx, ry, rz;
 
         // g(...,k,l,..) = rkrl * g(...,k-1,l,..) + g(...,k-1,l+1,..)
+        rx = rkrl[0];
+        ry = rkrl[1];
+        rz = rkrl[2];
         p1x = gx - dk;
         p1y = gy - dk;
         p1z = gz - dk;
@@ -527,13 +551,16 @@ void CINTg0_il2d_4d(double *g, const CINTEnvVars *envs)
         for (i = 0; i <= nmax; i++) {
                 ptr = l*dl + k*dk + i*di;
                 for (n = ptr; n < ptr+nroots; n++) {
-                        gx[n] = rkrl[0] * p1x[n] + p2x[n];
-                        gy[n] = rkrl[1] * p1y[n] + p2y[n];
-                        gz[n] = rkrl[2] * p1z[n] + p2z[n];
+                        gx[n] = rx * p1x[n] + p2x[n];
+                        gy[n] = ry * p1y[n] + p2y[n];
+                        gz[n] = rz * p1z[n] + p2z[n];
                 }
         } } }
 
         // g(i,...,j) = rirj * g(i,...,j-1) +  g(i+1,...,j-1)
+        rx = rirj[0];
+        ry = rirj[1];
+        rz = rirj[2];
         p1x = gx - dj;
         p1y = gy - dj;
         p1z = gz - dj;
@@ -545,9 +572,9 @@ void CINTg0_il2d_4d(double *g, const CINTEnvVars *envs)
         for (k = 0; k <= lk; k++) {
                 ptr = j*dj + l*dl + k*dk;
                 for (n = ptr; n < ptr+dk-di*j; n++) {
-                        gx[n] = rirj[0] * p1x[n] + p2x[n];
-                        gy[n] = rirj[1] * p1y[n] + p2y[n];
-                        gz[n] = rirj[2] * p1z[n] + p2z[n];
+                        gx[n] = rx * p1x[n] + p2x[n];
+                        gy[n] = ry * p1y[n] + p2y[n];
+                        gz[n] = rz * p1z[n] + p2z[n];
                 }
         } } }
 }
@@ -570,8 +597,12 @@ void CINTg0_ik2d_4d(double *g, const CINTEnvVars *envs)
         const double *rkrl = envs->rkrl;
         DEF_GXYZ(double, g, gx, gy, gz);
         const double *p1x, *p1y, *p1z, *p2x, *p2y, *p2z;
+        double rx, ry, rz;
 
         // g(...,k,l,..) = rkrl * g(...,k,l-1,..) + g(...,k+1,l-1,..)
+        rx = rkrl[0];
+        ry = rkrl[1];
+        rz = rkrl[2];
         p1x = gx - dl;
         p1y = gy - dl;
         p1z = gz - dl;
@@ -585,14 +616,17 @@ void CINTg0_ik2d_4d(double *g, const CINTEnvVars *envs)
                 for (i = 0; i <= nmax; i++) {
                         ptr = l*dl + k*dk + i*di;
                         for (n = ptr; n < ptr+nroots; n++) {
-                                gx[n] = rkrl[0] * p1x[n] + p2x[n];
-                                gy[n] = rkrl[1] * p1y[n] + p2y[n];
-                                gz[n] = rkrl[2] * p1z[n] + p2z[n];
+                                gx[n] = rx * p1x[n] + p2x[n];
+                                gy[n] = ry * p1y[n] + p2y[n];
+                                gz[n] = rz * p1z[n] + p2z[n];
                         }
                 } }
         }
 
         // g(i,...,j) = rirj * g(i,...,j-1) +  g(i+1,...,j-1)
+        rx = rirj[0];
+        ry = rirj[1];
+        rz = rirj[2];
         p1x = gx - dj;
         p1y = gy - dj;
         p1z = gz - dj;
@@ -604,9 +638,9 @@ void CINTg0_ik2d_4d(double *g, const CINTEnvVars *envs)
         for (k = 0; k <= lk; k++) {
                 ptr = j*dj + l*dl + k*dk;
                 for (n = ptr; n < ptr+dk-di*j; n++) {
-                        gx[n] = rirj[0] * p1x[n] + p2x[n];
-                        gy[n] = rirj[1] * p1y[n] + p2y[n];
-                        gz[n] = rirj[2] * p1z[n] + p2z[n];
+                        gx[n] = rx * p1x[n] + p2x[n];
+                        gy[n] = ry * p1y[n] + p2y[n];
+                        gz[n] = rz * p1z[n] + p2z[n];
                 }
         } } }
 }
@@ -1654,7 +1688,9 @@ error:
         fprintf(stderr, "Dimension error for CINTg0_2e_lj2d4d: iklj = %d %d %d %d",
                (FINT)envs->li_ceil, (FINT)envs->lk_ceil,
                (FINT)envs->ll_ceil, (FINT)envs->lj_ceil);
+#ifdef DEBUG
         exit(1);
+#endif
 }
 
 void CINTg0_2e_kj2d4d(double *g, struct _BC *bc, const CINTEnvVars *envs)
@@ -1676,8 +1712,9 @@ void CINTg0_2e_il2d4d(double *g, struct _BC *bc, const CINTEnvVars *envs)
 /*
  * g[i,k,l,j] = < ik | lj > = ( i j | k l )
  */
-void CINTg0_2e(double *g, const double fac, const CINTEnvVars *envs)
+int CINTg0_2e(double *g, const double fac, const CINTEnvVars *envs)
 {
+        FINT irys;
         const double aij = envs->aij;
         const double akl = envs->akl;
         double a0, a1, fac1, x;
@@ -1694,40 +1731,50 @@ void CINTg0_2e(double *g, const double fac, const CINTEnvVars *envs)
 #ifdef WITH_RANGE_COULOMB
         const double omega = envs->env[PTR_RANGE_OMEGA];
         double theta = 0;
-        if (omega > 0) {
-// For long-range part of range-separated Coulomb operator
+        if (omega != 0) {
                 theta = omega * omega / (omega * omega + a0);
-                a0 *= theta;
-        }
-#endif
-
-        fac1 = sqrt(a0 / (a1 * a1 * a1)) * fac;
-        x = a0 *(rijrkl[0] * rijrkl[0]
-               + rijrkl[1] * rijrkl[1]
-               + rijrkl[2] * rijrkl[2]);
-        CINTrys_roots(envs->nrys_roots, x, u, w);
-
-        FINT irys;
-#ifdef WITH_RANGE_COULOMB
-        if (omega > 0) {
-                /* u[:] = tau^2 / (1 - tau^2)
-                 * omega^2u^2 = a0 * tau^2 / (theta^-1 - tau^2)
-                 * transform u[:] to theta^-1 tau^2 / (theta^-1 - tau^2)
-                 * so the rest code can be reused.
-                 */
-                for (irys = 0; irys < envs->nrys_roots; irys++) {
-                        u[irys] /= u[irys] + 1 - u[irys] * theta;
+                if (omega > 0) { // long-range part of range-separated Coulomb
+                        a0 *= theta;
                 }
         }
 #endif
+
+        x = a0 *(rijrkl[0] * rijrkl[0]
+               + rijrkl[1] * rijrkl[1]
+               + rijrkl[2] * rijrkl[2]);
+
+#ifdef WITH_RANGE_COULOMB
+        if (omega < 0) { // short-range part of range-separated Coulomb
+                // very small erfc() leads to ~0 weights
+                if (theta * x > envs->expcutoff) {
+                        return 0;
+                }
+                CINTerfc_rys_roots(envs->nrys_roots, x, sqrt(theta), u, w);
+        } else {
+                CINTrys_roots(envs->nrys_roots, x, u, w);
+                if (omega > 0) {
+                        /* u[:] = tau^2 / (1 - tau^2)
+                         * omega^2u^2 = a0 * tau^2 / (theta^-1 - tau^2)
+                         * transform u[:] to theta^-1 tau^2 / (theta^-1 - tau^2)
+                         * so the rest code can be reused.
+                         */
+                        for (irys = 0; irys < envs->nrys_roots; irys++) {
+                                u[irys] /= u[irys] + 1 - u[irys] * theta;
+                        }
+                }
+        }
+#else
+        CINTrys_roots(envs->nrys_roots, x, u, w);
+#endif
+        fac1 = sqrt(a0 / (a1 * a1 * a1)) * fac;
         if (envs->g_size == 1) {
                 g[0] = 1;
                 g[1] = 1;
                 g[2] *= fac1;
-                return;
+                return 1;
         }
 
-        double u2, div, tmp1, tmp2, tmp3, tmp4;
+        double u2, tmp1, tmp2, tmp3, tmp4, tmp5;
         const double *rijrx = envs->rijrx;
         const double *rklrx = envs->rklrx;
         struct _BC bc;
@@ -1744,14 +1791,14 @@ void CINTg0_2e(double *g, const double fac, const CINTEnvVars *envs)
                  *u2 = aij*akl/(aij+akl)*t2/(1-t2)
                  */
                 u2 = a0 * u[irys];
-                div = 1 / (u2 * (aij + akl) + a1);
-                tmp1 = u2 * div;
+                tmp4 = .5 / (u2 * (aij + akl) + a1);
+                tmp5 = u2 * tmp4;
+                tmp1 = 2. * tmp5;
                 tmp2 = tmp1 * akl;
                 tmp3 = tmp1 * aij;
-                tmp4 = .5 * div;
-                b00[irys] = 0.5 * tmp1;
-                b10[irys] = b00[irys] + tmp4 * akl;
-                b01[irys] = b00[irys] + tmp4 * aij;
+                b00[irys] = tmp5;
+                b10[irys] = tmp5 + tmp4 * akl;
+                b01[irys] = tmp5 + tmp4 * aij;
                 c00[0] = rijrx[0] - tmp2 * rijrkl[0];
                 c00[1] = rijrx[1] - tmp2 * rijrkl[1];
                 c00[2] = rijrx[2] - tmp2 * rijrkl[2];
@@ -1762,6 +1809,8 @@ void CINTg0_2e(double *g, const double fac, const CINTEnvVars *envs)
         }
 
         (*envs->f_g0_2d4d)(g, &bc, envs);
+
+        return 1;
 }
 
 /*

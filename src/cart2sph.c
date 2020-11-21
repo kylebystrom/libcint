@@ -7,6 +7,7 @@
  *
  * Cartesian to real-spheric coefficients
  * ref: H. B. Schlegel and M. J.  Frisch, Int. J. Quant. Chem., 54(1995), 83-87.
+ * See also the python implementation xyz2sph_real in testsuit/cart2sph.py
  */
 
 #include <stdlib.h>
@@ -22,6 +23,22 @@
 static const double g_trans_cart2sph[] = {
         1, /* factors of s and p are moved to CINTcommon_fac_sp */
         // px
+#ifdef PYPZPX
+        // py
+        0,
+        1,
+        0,
+        // pz
+        0,
+        0,
+        1,
+        // px
+        1,
+        0,
+        0,
+#else
+// by default, p orbitals are ordered px, py, pz
+        // px
         1,
         0,
         0,
@@ -33,6 +50,7 @@ static const double g_trans_cart2sph[] = {
         0,
         0,
         1,
+#endif
         // dxy
         0,
         1.092548430592079070,
@@ -2975,40 +2993,50 @@ static double *s_ket_cart2spheric1(double *gsph, double *gcart,
 // transform p function from cartesian to spheric
 static double *p_bra_cart2spheric(double *gsph, FINT nket, double *gcart, FINT l)
 {
-        /*
-        double *pgcart = gcart;
+#ifdef PYPZPX
         FINT i;
         for (i = 0; i < nket; i++) {
-                gsph[0] = gcart[0];
-                gsph[1] = gcart[1];
-                gsph[2] = gcart[2];
-                gsph += 3;
-                gcart += 3;
+                gsph[i*3+0] = gcart[i*3+1];  // py
+                gsph[i*3+1] = gcart[i*3+2];  // pz
+                gsph[i*3+2] = gcart[i*3+0];  // px
         }
-        return pgcart;*/
+        return gsph;
+#else
         return gcart;
+#endif
 }
 static double *p_ket_cart2spheric(double *gsph, double *gcart,
                                   FINT lds, FINT nbra, FINT l)
 {
-        /*
+#ifdef PYPZPX
         FINT i;
         for (i = 0; i < nbra; i++) {
-                gsph[0*nbra+i] = gcart[0*nbra+i];
-                gsph[1*nbra+i] = gcart[1*nbra+i];
-                gsph[2*nbra+i] = gcart[2*nbra+i];
-        }*/
+                gsph[0*nbra+i] = gcart[1*nbra+i];  // py
+                gsph[1*nbra+i] = gcart[2*nbra+i];  // pz
+                gsph[2*nbra+i] = gcart[0*nbra+i];  // px
+        }
+        return gsph;
+#else
         return gcart;
+#endif
 }
 static double *p_ket_cart2spheric1(double *gsph, double *gcart,
                                    FINT lds, FINT nbra, FINT l)
 {
         FINT i;
+#ifdef PYPZPX
+        for (i = 0; i < nbra; i++) {
+                gsph[0*nbra+i] = gcart[1*nbra+i];  // py
+                gsph[1*nbra+i] = gcart[2*nbra+i];  // pz
+                gsph[2*nbra+i] = gcart[0*nbra+i];  // px
+        }
+#else
         for (i = 0; i < nbra; i++) {
                 gsph[0*lds+i] = gcart[0*nbra+i];
                 gsph[1*lds+i] = gcart[1*nbra+i];
                 gsph[2*lds+i] = gcart[2*nbra+i];
         }
+#endif
         return gsph;
 }
 
@@ -7838,8 +7866,8 @@ void c2s_sph_1e(double *opij, double *gctr, FINT *dims,
         FINT ic, jc;
         FINT buflen = nfi*dj;
         double *buf1, *buf2;
-        MALLOC_INSTACK(buf1, double, buflen);
-        MALLOC_INSTACK(buf2, double, buflen);
+        MALLOC_INSTACK(buf1, buflen);
+        MALLOC_INSTACK(buf2, buflen);
         double *pij;
         double *tmp1;
 
@@ -7880,8 +7908,8 @@ void c2s_sf_1e(double complex *opij, double *gctr, FINT *dims,
         FINT nf = envs->nf;
         FINT ic, jc;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, di*nf2j);
-        MALLOC_INSTACK(tmp2, double complex, di*nf2j);
+        MALLOC_INSTACK(tmp1, di*nf2j);
+        MALLOC_INSTACK(tmp2, di*nf2j);
 
         for (jc = 0; jc < j_ctr; jc++) {
         for (ic = 0; ic < i_ctr; ic++) {
@@ -7914,8 +7942,8 @@ void c2s_sf_1ei(double complex *opij, double *gctr, FINT *dims,
         FINT nf = envs->nf;
         FINT ic, jc;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, di*nf2j);
-        MALLOC_INSTACK(tmp2, double complex, di*nf2j);
+        MALLOC_INSTACK(tmp1, di*nf2j);
+        MALLOC_INSTACK(tmp2, di*nf2j);
 
         for (jc = 0; jc < j_ctr; jc++) {
         for (ic = 0; ic < i_ctr; ic++) {
@@ -7959,8 +7987,8 @@ void c2s_si_1e(double complex *opij, double *gctr, FINT *dims,
         double *gc_z = gc_y + nf * i_ctr * j_ctr;
         double *gc_1 = gc_z + nf * i_ctr * j_ctr;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, nf2i*nf2j);
-        MALLOC_INSTACK(tmp2, double complex, di*nf2j);
+        MALLOC_INSTACK(tmp1, nf2i*nf2j);
+        MALLOC_INSTACK(tmp2, di*nf2j);
 
         for (jc = 0; jc < j_ctr; jc++) {
         for (ic = 0; ic < i_ctr; ic++) {
@@ -8011,8 +8039,8 @@ void c2s_si_1ei(double complex *opij, double *gctr, FINT *dims,
         double *gc_z = gc_y + nf * i_ctr * j_ctr;
         double *gc_1 = gc_z + nf * i_ctr * j_ctr;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, nf2i*nf2j);
-        MALLOC_INSTACK(tmp2, double complex, di*nf2j);
+        MALLOC_INSTACK(tmp1, nf2i*nf2j);
+        MALLOC_INSTACK(tmp2, di*nf2j);
 
         for (jc = 0; jc < j_ctr; jc++) {
         for (ic = 0; ic < i_ctr; ic++) {
@@ -8075,7 +8103,7 @@ void c2s_sph_2e1(double *out, double *gctr, FINT *dims,
         FINT ic, jc, kc, lc;
         FINT buflen = nfikl*dj;
         double *buf1;
-        MALLOC_INSTACK(buf1, double, buflen*4);
+        MALLOC_INSTACK(buf1, buflen*4);
         double *buf2 = buf1 + buflen;
         double *buf3 = buf2 + buflen;
         double *buf4 = buf3 + buflen;
@@ -8107,8 +8135,18 @@ static double *sph2e_inner(double *gsph, double *gcart,
 {
         FINT n;
         switch (l) {
+#ifdef PYPZPX
+        case 0:
+                return gcart;
+        case 1:
+                for (n = 0; n < ncall; n++) {
+                        p_ket_cart2spheric(gsph+n*sizsph, gcart+n*sizcart, nbra, nbra, l);
+                }
+                break;
+#else
         case 0: case 1:
                 return gcart;
+#endif
         case 2:
                 for (n = 0; n < ncall; n++) {
                         d_ket_cart2spheric(gsph+n*sizsph, gcart+n*sizcart, nbra, nbra, l);
@@ -8166,7 +8204,7 @@ void c2s_sf_2e1(double complex *opij, double *gctr, FINT *dims,
         FINT d_j = nfk * nfl * nfj;
         FINT i;
         double complex *tmp1;
-        MALLOC_INSTACK(tmp1, double complex, di*nfk*nfl*nf2j);
+        MALLOC_INSTACK(tmp1, di*nfk*nfl*nf2j);
 
         for (i = 0; i < i_ctr * j_ctr * k_ctr * l_ctr; i++) {
                 (c2s_bra_spinor_e1sf[i_l])(tmp1, d_j, gctr, i_kp, i_l);
@@ -8202,7 +8240,7 @@ void c2s_sf_2e1i(double complex *opij, double *gctr, FINT *dims,
         FINT d_j = nfk * nfl * nfj;
         FINT i;
         double complex *tmp1;
-        MALLOC_INSTACK(tmp1, double complex, di*nfk*nfl*nf2j);
+        MALLOC_INSTACK(tmp1, di*nfk*nfl*nf2j);
 
         for (i = 0; i < i_ctr * j_ctr * k_ctr * l_ctr; i++) {
                 (c2s_bra_spinor_e1sf[i_l])(tmp1, d_j, gctr, i_kp, i_l);
@@ -8262,8 +8300,8 @@ void c2s_sf_2e2(double complex *fijkl, double complex *opij, FINT *dims,
         FINT len1 = nf2k*di*dj*nf2l;
         FINT len2 = dk*di*dj*nf2l;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
 
         for (lc = 0; lc < l_ctr; lc++) {
         for (kc = 0; kc < k_ctr; kc++) {
@@ -8322,8 +8360,8 @@ void c2s_sf_2e2i(double complex *fijkl, double complex *opij, FINT *dims,
         FINT len1 = nf2k*di*dj*nf2l;
         FINT len2 = dk*di*dj*nf2l;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
 
         for (lc = 0; lc < l_ctr; lc++) {
         for (kc = 0; kc < k_ctr; kc++) {
@@ -8380,8 +8418,8 @@ void c2s_si_2e1(double complex *opij, double *gctr, FINT *dims,
         FINT len1 = nf2i*nfk*nfl*nf2j;
         FINT len2 = di*nfk*nfl*nf2j;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
 
         for (i = 0; i < i_ctr * j_ctr * k_ctr * l_ctr; i++) {
                 //cmplx( gctr.POS_1, gctr.POS_Z)
@@ -8436,8 +8474,8 @@ void c2s_si_2e1i(double complex *opij, double *gctr, FINT *dims,
         FINT len1 = nf2i*nfk*nfl*nf2j;
         FINT len2 = di*nfk*nfl*nf2j;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
 
         for (i = 0; i < i_ctr * j_ctr * k_ctr * l_ctr; i++) {
                 //cmplx( gctr.POS_1, gctr.POS_Z)
@@ -8551,8 +8589,8 @@ void c2s_si_2e2(double complex *fijkl, double complex *opij, FINT *dims,
         FINT len1 = nf2k*di*dj*nf2l;
         FINT len2 = dk*di*dj*nf2l;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
 
         for (lc = 0; lc < l_ctr; lc++) {
         for (kc = 0; kc < k_ctr; kc++) {
@@ -8619,8 +8657,8 @@ void c2s_si_2e2i(double complex *fijkl, double complex *opij, FINT *dims,
         FINT len1 = nf2k*di*dj*nf2l;
         FINT len2 = dk*di*dj*nf2l;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
 
         for (lc = 0; lc < l_ctr; lc++) {
         for (kc = 0; kc < k_ctr; kc++) {
@@ -8731,7 +8769,7 @@ void c2s_sph_3c2e1(double *bufijk, double *gctr, FINT *dims,
         FINT ic, jc, kc;
         FINT buflen = nfi*nfk*dj;
         double *buf1;
-        MALLOC_INSTACK(buf1, double, buflen*3);
+        MALLOC_INSTACK(buf1, buflen*3);
         double *buf2 = buf1 + buflen;
         double *buf3 = buf2 + buflen;
         double *pijk;
@@ -8801,8 +8839,8 @@ void c2s_sph_3c2e1_ssc(double *bufijk, double *gctr, FINT *dims,
         FINT ic, jc, kc;
         FINT buflen = nfi*nfk*dj;
         double *buf1, *buf2;
-        MALLOC_INSTACK(buf1, double, buflen);
-        MALLOC_INSTACK(buf2, double, buflen);
+        MALLOC_INSTACK(buf1, buflen);
+        MALLOC_INSTACK(buf2, buflen);
         double *pijk;
         double *tmp1;
 
@@ -8854,12 +8892,12 @@ void c2s_sf_3c2e1(double complex *opijk, double *gctr, FINT *dims,
         FINT ic, jc, kc;
         FINT buflen = nfi*dk*nfj;
         double *buf, *pbuf;
-        MALLOC_INSTACK(buf, double, buflen);
+        MALLOC_INSTACK(buf, buflen);
         FINT len1 = di*dk*nf2j;
         FINT len2 = di*dk*dj;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
         double complex *pijk;
 
         for (kc = 0; kc < k_ctr; kc++) {
@@ -8907,12 +8945,12 @@ void c2s_sf_3c2e1i(double complex *opijk, double *gctr, FINT *dims,
         FINT ic, jc, kc;
         FINT buflen = nfi*dk*nfj;
         double *buf, *pbuf;
-        MALLOC_INSTACK(buf, double, buflen);
+        MALLOC_INSTACK(buf, buflen);
         FINT len1 = di*dk*nf2j;
         FINT len2 = di*dk*dj;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
         double complex *pijk;
 
         for (kc = 0; kc < k_ctr; kc++) {
@@ -8969,7 +9007,7 @@ void c2s_si_3c2e1(double complex *opijk, double *gctr, FINT *dims,
         double *gc_1 = gc_z + nf * i_ctr * j_ctr * k_ctr;
         FINT buflen = nfi*dk*nfj;
         double *bufx;
-        MALLOC_INSTACK(bufx, double, buflen*4);
+        MALLOC_INSTACK(bufx, buflen*4);
         double *bufy = bufx + buflen;
         double *bufz = bufy + buflen;
         double *buf1 = bufz + buflen;
@@ -8978,7 +9016,7 @@ void c2s_si_3c2e1(double complex *opijk, double *gctr, FINT *dims,
         FINT len2 = di*dk*nf2j;
         FINT len3 = di*dk*dj;
         double complex *tmp1;
-        MALLOC_INSTACK(tmp1, double complex, len1+len2+len3);
+        MALLOC_INSTACK(tmp1, len1+len2+len3);
         double complex *tmp2 = tmp1 + len1;
         double complex *tmp3 = tmp2 + len2;
         double complex *pijk;
@@ -9049,7 +9087,7 @@ void c2s_si_3c2e1i(double complex *opijk, double *gctr, FINT *dims,
         double *gc_1 = gc_z + nf * i_ctr * j_ctr * k_ctr;
         double *bufx;
         FINT buflen = nfi*dk*nfj;
-        MALLOC_INSTACK(bufx, double, buflen*4);
+        MALLOC_INSTACK(bufx, buflen*4);
         double *bufy = bufx + buflen;
         double *bufz = bufy + buflen;
         double *buf1 = bufz + buflen;
@@ -9058,7 +9096,7 @@ void c2s_si_3c2e1i(double complex *opijk, double *gctr, FINT *dims,
         FINT len2 = di*dk*nf2j;
         FINT len3 = di*dk*dj;
         double complex *tmp1;
-        MALLOC_INSTACK(tmp1, double complex, len1+len2+len3);
+        MALLOC_INSTACK(tmp1, len1+len2+len3);
         double complex *tmp2 = tmp1 + len1;
         double complex *tmp3 = tmp2 + len2;
         double complex *pijk;
@@ -9120,8 +9158,8 @@ void c2s_sf_3c2e1_ssc(double complex *opijk, double *gctr, FINT *dims,
         FINT len1 = di*nfk*nf2j;
         FINT len2 = di*nfk*dj;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
         double complex *pijk;
 
         for (kc = 0; kc < k_ctr; kc++) {
@@ -9166,8 +9204,8 @@ void c2s_sf_3c2e1i_ssc(double complex *opijk, double *gctr, FINT *dims,
         FINT len1 = di*nfk*nf2j;
         FINT len2 = di*nfk*dj;
         double complex *tmp1, *tmp2;
-        MALLOC_INSTACK(tmp1, double complex, len1);
-        MALLOC_INSTACK(tmp2, double complex, len2);
+        MALLOC_INSTACK(tmp1, len1);
+        MALLOC_INSTACK(tmp2, len2);
         double complex *pijk;
 
         for (kc = 0; kc < k_ctr; kc++) {
@@ -9219,7 +9257,7 @@ void c2s_si_3c2e1_ssc(double complex *opijk, double *gctr, FINT *dims,
         FINT len2 = di*nfk*nf2j;
         FINT len3 = di*nfk*dj;
         double complex *tmp1;
-        MALLOC_INSTACK(tmp1, double complex, len1+len2+len3);
+        MALLOC_INSTACK(tmp1, len1+len2+len3);
         double complex *tmp2 = tmp1 + len1;
         double complex *tmp3 = tmp2 + len2;
         double complex *pijk;
@@ -9284,7 +9322,7 @@ void c2s_si_3c2e1i_ssc(double complex *opijk, double *gctr, FINT *dims,
         FINT len2 = di*nfk*nf2j;
         FINT len3 = di*nfk*dj;
         double complex *tmp1;
-        MALLOC_INSTACK(tmp1, double complex, len1+len2+len3);
+        MALLOC_INSTACK(tmp1, len1+len2+len3);
         double complex *tmp2 = tmp1 + len1;
         double complex *tmp3 = tmp2 + len2;
         double complex *pijk;

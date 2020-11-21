@@ -48,7 +48,7 @@ typedef struct {
         FINT g2d_ijmax;
         FINT g2d_klmax;
         double common_factor;
-        double _padding1;
+        double expcutoff;
         double rirj[3]; // diff by sign in different g0_2d4d algorithm
         double rkrl[3];
         double *rx_in_rijrx;
@@ -59,7 +59,7 @@ typedef struct {
         double *rk;
         double *rl;
 
-        void (*f_g0_2e)();
+        int (*f_g0_2e)();
         void (*f_g0_2d4d)();
         void (*f_gout)();
 
@@ -111,14 +111,13 @@ void CINTx1k_1e(double *f, double *g, double rk[3],
 void CINTprim_to_ctr(double *gc, FINT nf, double *gp,
                      FINT inc, FINT nprim,
                      FINT nctr, double *pcoeff);
-void CINTprim_to_ctr_0(double *gc, FINT nf, double *gp,
-                       FINT nprim, FINT nctr, double *coeff);
-void CINTprim_to_ctr_1(double *gc, FINT nf, double *gp,
-                       FINT nprim, FINT nctr, double *coeff);
-void CINTprim_to_ctr_opt(double *gc, FINT nf, double *gp,
-                         double *non0coeff, FINT *non0idx, FINT non0ctr);
 
 double CINTcommon_fac_sp(FINT l);
+
+void CINTprim_to_ctr_0(double *gc, double *gp, double *coeff, FINT nf,
+                       FINT nprim, FINT nctr, int non0ctr, int *sortedidx);
+void CINTprim_to_ctr_1(double *gc, double *gp, double *coeff, FINT nf,
+                       FINT nprim, FINT nctr, int non0ctr, int *sortedidx);
 
 #define G1E_D_I(f, g, li, lj, lk)   CINTnabla1i_1e(f, g, li, lj, lk, envs)
 #define G1E_D_J(f, g, li, lj, lk)   CINTnabla1j_1e(f, g, li, lj, lk, envs)
