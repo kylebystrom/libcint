@@ -30,6 +30,7 @@
   '("int1e_rr_origj"            ( \| r r \| ))
   '("int1e_r2_origj"            ( \| r dot r \| ))
   '("int1e_r4_origj"            ( \| r dot r r dot r))
+  '("int1e_r6_origj"            ( \| r dot r r dot r r dot r))
   '("int1e_p4"                  ( p dot p \| p dot p ))
   ; use p* instead of p, to ignore the operator after it, then it can
   ; cross to the next p
