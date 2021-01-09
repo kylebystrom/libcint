@@ -356,6 +356,44 @@ FINT CINTset_pairdata(PairData *pairdata, double *ai, double *aj, double *ri, do
         return empty;
 }
 
+FINT CINTset_pairdata_xed(PairData *pairdata, double *ai, double *aj,
+                          double *ri, double *rj,
+                          double *log_maxci, double *log_maxcj,
+                          FINT li_ceil, FINT lj_ceil, FINT iprim, FINT jprim,
+                          double rr_ij, double expcutoff, double lambda)
+{
+        FINT ip, jp, n;
+        double aij, eij, cceij, aip, ajp;
+        double log_rr_ij = (li_ceil+lj_ceil+1) * approx_log(rr_ij+1) / 2;
+        PairData *pdata;
+
+        FINT empty = 1;
+        for (n = 0, jp = 0; jp < jprim; jp++) {
+                ajp = aj[jp] * (1-lambda) * (1-lambda);
+                for (ip = 0; ip < iprim; ip++, n++) {
+                        aip = ai[ip] * lambda * lambda;
+                        aij = 1/(aip + ajp);
+                        eij = rr_ij * aip * ajp * aij;
+                        cceij = eij - log_rr_ij - log_maxci[ip] - log_maxcj[jp];
+                        pdata = pairdata + n;
+                        pdata->cceij = cceij;
+                        if (cceij < expcutoff) {
+                                empty = 0;
+                                pdata->rij[0] = (aip*ri[0] + ajp*rj[0]) * aij;
+                                pdata->rij[1] = (aip*ri[1] + ajp*rj[1]) * aij;
+                                pdata->rij[2] = (aip*ri[2] + ajp*rj[2]) * aij;
+                                pdata->eij = exp(-eij);
+                        } else {
+                                pdata->rij[0] = 0;
+                                pdata->rij[1] = 0;
+                                pdata->rij[2] = 0;
+                                pdata->eij = 0;
+                        }
+                }
+        }
+        return empty;
+}
+
 void CINTOpt_setij(CINTOpt *opt, FINT *ng,
                    FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env)
 {

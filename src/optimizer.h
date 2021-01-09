@@ -44,6 +44,11 @@ FINT CINTset_pairdata(PairData *pairdata, double *ai, double *aj, double *ri, do
                       double *log_maxci, double *log_maxcj,
                       FINT li_ceil, FINT lj_ceil, FINT iprim, FINT jprim,
                       double rr_ij, double expcutoff);
+FINT CINTset_pairdata_xed(PairData *pairdata, double *ai, double *aj,
+                          double *ri, double *rj,
+                          double *log_maxci, double *log_maxcj,
+                          FINT li_ceil, FINT lj_ceil, FINT iprim, FINT jprim,
+                          double rr_ij, double expcutoff, double lambda);
 
 void CINTOpt_4cindex_xyz(CINTOpt *opt, FINT *ng,
                          FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env);

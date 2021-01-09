@@ -24,9 +24,9 @@ void CINTinit_int2e_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
                             FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env);
 void CINTinit_int3c2e_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
                               FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env);
-void CINTinit_int3c2e_lhpot_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
-                                    FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env,
-                                    double* ri, double* rj, double* rk);
+void CINTinit_int3c2e_xed_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
+                                  FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env,
+                                  double* ri, double* rj, double* rk);
 void CINTinit_int2c2e_EnvVars(CINTEnvVars *envs, FINT *ng, FINT *shls,
                               FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env);
 
