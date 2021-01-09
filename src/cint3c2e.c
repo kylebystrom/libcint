@@ -1010,6 +1010,11 @@ void int3c2e_optimizer(CINTOpt **opt, FINT *atm, FINT natm,
         CINTall_3c2e_optimizer(opt, ng, atm, natm, bas, nbas, env);
 }
 
+void int3c2e_xed_optimizer(CINTOpt **opt, FINT *atm, FINT natm,
+                           FINT *bas, FINT nbas, double *env) {
+}
+
+
 FINT int3c2e_cart(double *out, FINT *dims, FINT *shls, FINT *atm, FINT natm,
                  FINT *bas, FINT nbas, double *env, CINTOpt *opt, double *cache)
 {
