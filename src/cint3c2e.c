@@ -325,9 +325,9 @@ FINT CINT3c2e_loop_nopt_xed(double *gctr, CINTEnvVars *envs, double *cache)
                 for (jp = 0; jp < j_prim; jp++) {
                         envs->aj = aj[jp] * (1 - lambda) * (1 - lambda);
                         if (j_ctr == 1) {
-                                fac1j = fac1k * cj[jp] * pow(1 - lambda, envs->j_l);
+                                fac1j = fac1k * cj[jp] * pow(lambda - 1, envs->j_l);
                         } else {
-                                fac1j = fac1k * pow(1 - lambda, envs->j_l);
+                                fac1j = fac1k * pow(lambda - 1, envs->j_l);
                                 *iempty = 1;
                         }
                         for (ip = 0; ip < i_prim; ip++, pdata_ij++) {
